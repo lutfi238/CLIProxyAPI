@@ -80,6 +80,9 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	from := opts.SourceFormat
 	to := sdktranslator.FromString("antigravity")
 
+	// Ensure thinking models have sufficient max_tokens
+	req.Payload = ensureThinkingMaxTokens(req.Payload, req.Model)
+
 	// Translate request: new translator if enabled, otherwise old translator
 	var translated []byte
 	if e.cfg != nil && e.cfg.UseCanonicalTranslator {
@@ -97,6 +100,14 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	translated = applyThinkingMetadataCLI(translated, req.Metadata, req.Model)
 	translated = util.ApplyDefaultThinkingIfNeededCLI(req.Model, translated)
 	translated = normalizeAntigravityThinking(req.Model, translated)
+
+	// Debug: log thinking config for Claude thinking models
+	if strings.Contains(strings.ToLower(req.Model), "claude") && strings.Contains(strings.ToLower(req.Model), "thinking") {
+		log.Debugf("antigravity executor [%s]: thinkingBudget=%v, maxOutputTokens=%v",
+			req.Model,
+			gjson.GetBytes(translated, "request.generationConfig.thinkingConfig.thinkingBudget").Value(),
+			gjson.GetBytes(translated, "request.generationConfig.maxOutputTokens").Value())
+	}
 
 	baseURLs := antigravityBaseURLFallbackOrder(auth)
 	httpClient := newProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
@@ -205,6 +216,9 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 
 	from := opts.SourceFormat
 	to := sdktranslator.FromString("antigravity")
+
+	// Ensure thinking models have sufficient max_tokens
+	req.Payload = ensureThinkingMaxTokens(req.Payload, req.Model)
 
 	// Translate request: new translator if enabled, otherwise old translator
 	var translated []byte
@@ -835,7 +849,12 @@ func geminiToAntigravity(modelName string, payload []byte, projectID string) []b
 	delete(request, "safetySettings")
 
 	if genConfig, ok := request["generationConfig"].(map[string]interface{}); ok {
-		delete(genConfig, "maxOutputTokens")
+		// Delete maxOutputTokens for most models, but PRESERVE for Claude thinking models
+		// Claude extended thinking requires max_tokens > thinking.budget_tokens
+		isClaudeThinking := strings.Contains(modelName, "claude") && strings.Contains(modelName, "thinking")
+		if !isClaudeThinking {
+			delete(genConfig, "maxOutputTokens")
+		}
 
 		// TODO: Fix GPT-OSS thinking mode - model gets stuck in infinite planning loops
 		// GPT-OSS models have issues with thinking mode - they repeatedly generate

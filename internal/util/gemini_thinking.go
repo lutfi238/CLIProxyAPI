@@ -60,7 +60,9 @@ func ApplyGeminiCLIThinkingConfig(body []byte, budget *int, includeThoughts *boo
 // modelsWithDefaultThinking lists models that should have thinking enabled by default
 // when no explicit thinkingConfig is provided.
 var modelsWithDefaultThinking = map[string]bool{
-	"gemini-3-pro-preview": true,
+	"gemini-3-pro-preview":              true,
+	"gemini-claude-sonnet-4-5-thinking": true,
+	"gemini-claude-opus-4-5-thinking":   true,
 }
 
 // ModelHasDefaultThinking returns true if the model should have thinking enabled by default.
@@ -93,8 +95,27 @@ func ApplyDefaultThinkingIfNeededCLI(model string, body []byte) []byte {
 	if gjson.GetBytes(body, "request.generationConfig.thinkingConfig").Exists() {
 		return body
 	}
-	updated, _ := sjson.SetBytes(body, "request.generationConfig.thinkingConfig.thinkingBudget", -1)
+
+	// Use proper thinking budget based on model type
+	// Claude models require minimum budget of 1024
+	budget := -1
+	isClaude := strings.Contains(strings.ToLower(model), "claude")
+	if isClaude {
+		budget = 10240 // Use 10K for Claude thinking models
+	}
+
+	updated, _ := sjson.SetBytes(body, "request.generationConfig.thinkingConfig.thinkingBudget", budget)
 	updated, _ = sjson.SetBytes(updated, "request.generationConfig.thinkingConfig.include_thoughts", true)
+
+	// For Claude models, ensure maxOutputTokens > thinkingBudget
+	if isClaude {
+		// Check if maxOutputTokens is set and sufficient
+		maxTok := gjson.GetBytes(updated, "request.generationConfig.maxOutputTokens")
+		if !maxTok.Exists() || maxTok.Int() <= int64(budget) {
+			updated, _ = sjson.SetBytes(updated, "request.generationConfig.maxOutputTokens", 16384)
+		}
+	}
+
 	return updated
 }
 
@@ -185,7 +206,6 @@ func ConvertThinkingLevelToBudget(body []byte) []byte {
 	}
 	return updated
 }
-
 
 // GeminiThinkingFromMetadata extracts thinking configuration from request metadata.
 // Returns budget override, include_thoughts override, and whether any override was found.
