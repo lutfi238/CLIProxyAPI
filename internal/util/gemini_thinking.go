@@ -185,3 +185,40 @@ func ConvertThinkingLevelToBudget(body []byte) []byte {
 	}
 	return updated
 }
+
+
+// GeminiThinkingFromMetadata extracts thinking configuration from request metadata.
+// Returns budget override, include_thoughts override, and whether any override was found.
+func GeminiThinkingFromMetadata(metadata map[string]any) (*int, *bool, bool) {
+	if metadata == nil {
+		return nil, nil, false
+	}
+	var budget *int
+	var includeThoughts *bool
+	found := false
+
+	if v, ok := metadata[GeminiThinkingBudgetMetadataKey]; ok {
+		switch val := v.(type) {
+		case int:
+			budget = &val
+			found = true
+		case int64:
+			i := int(val)
+			budget = &i
+			found = true
+		case float64:
+			i := int(val)
+			budget = &i
+			found = true
+		}
+	}
+
+	if v, ok := metadata[GeminiIncludeThoughtsMetadataKey]; ok {
+		if b, ok := v.(bool); ok {
+			includeThoughts = &b
+			found = true
+		}
+	}
+
+	return budget, includeThoughts, found
+}

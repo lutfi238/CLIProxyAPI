@@ -23,7 +23,7 @@ import (
 const (
 	githubCopilotBaseURL       = "https://api.githubcopilot.com"
 	githubCopilotChatPath      = "/chat/completions"
-	githubCopilotAuthType      = "copilot"
+	githubCopilotAuthType      = "github-copilot"
 	githubCopilotTokenCacheTTL = 25 * time.Minute
 	// tokenExpiryBuffer is the time before expiry when we should refresh the token.
 	tokenExpiryBuffer = 5 * time.Minute
