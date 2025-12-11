@@ -364,6 +364,19 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 	} else {
 		// No specific provider requested - get all available providers for this model
 		providers = util.GetProviderName(normalizedModel)
+		if len(providers) == 0 && metadata != nil {
+			if originalRaw, ok := metadata[util.ThinkingOriginalModelMetadataKey]; ok {
+				if originalModel, okStr := originalRaw.(string); okStr {
+					originalModel = strings.TrimSpace(originalModel)
+					if originalModel != "" && !strings.EqualFold(originalModel, normalizedModel) {
+						if altProviders := util.GetProviderName(originalModel); len(altProviders) > 0 {
+							providers = altProviders
+							normalizedModel = originalModel
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if len(providers) == 0 {
@@ -407,7 +420,7 @@ func cloneBytes(src []byte) []byte {
 }
 
 func normalizeModelMetadata(modelName string) (string, map[string]any) {
-	return util.NormalizeGeminiThinkingModel(modelName)
+	return util.NormalizeThinkingModel(modelName)
 }
 
 func cloneMetadata(src map[string]any) map[string]any {

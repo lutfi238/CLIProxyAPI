@@ -2,10 +2,16 @@
 cli-proxy-api
 cliproxy
 *.exe
+*.dll
 
-# Configuration
+# Configuration (SENSITIVE - contains API keys)
 config.yaml
+config.yml
 .env
+*.env
+.env.*
+secrets.yaml
+secrets.yml
 
 # Generated content
 bin/*
@@ -18,9 +24,25 @@ objectstore/*
 static/*
 refs/*
 
-# Authentication data
+# Authentication data (SENSITIVE - contains tokens)
 auths/*
 !auths/.gitkeep
+
+# JSON files (many contain sensitive tokens)
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!**/fixtures/*.json
+
+# User auth directory (SENSITIVE)
+~/.cli-proxy-api/
+
+# Token files (SENSITIVE)
+*-token.json
+*_token.json
+*credentials*.json
+*auth*.json
 
 # Documentation
 docs/*
@@ -34,6 +56,7 @@ GEMINI.md
 .claude/*
 .serena/*
 .mcp/cache/
+.kiro/
 
 # Local data (fork-specific)
 /auth/
@@ -42,3 +65,18 @@ _wgun/
 # macOS
 .DS_Store
 ._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+.venv/
+
+# MCP server
+mcp-cliproxy/

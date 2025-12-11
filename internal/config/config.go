@@ -102,6 +102,11 @@ type Config struct {
 	// from your current session. Default: false.
 	IncognitoBrowser bool `yaml:"incognito-browser" json:"incognito-browser"`
 
+	// ModelPrefixProvider when true, prefixes model names with their provider name in brackets.
+	// For example, "gemini-2.5-flash" from antigravity becomes "[Antigravity] gemini-2.5-flash".
+	// This helps identify which provider each model comes from when using multiple providers.
+	ModelPrefixProvider bool `yaml:"model-prefix-provider" json:"model-prefix-provider"`
+
 	// legacyMigrationPending tracks whether legacy config fields were migrated and need saving.
 	legacyMigrationPending bool `yaml:"-" json:"-"`
 }

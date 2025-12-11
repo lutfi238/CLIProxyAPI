@@ -575,6 +575,9 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 		return nil, statusErr{code: http.StatusUnauthorized, msg: "missing access token"}
 	}
 
+	// Strip provider prefix from model name for API calls
+	originalModelName := registry.GetOriginalModelID(modelName)
+
 	base := strings.TrimSuffix(baseURL, "/")
 	if base == "" {
 		base = buildBaseURL(auth)
@@ -605,10 +608,10 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 			projectID = strings.TrimSpace(pid)
 		}
 	}
-	payload = geminiToAntigravity(modelName, payload, projectID)
-	payload, _ = sjson.SetBytes(payload, "model", alias2ModelName(modelName))
+	payload = geminiToAntigravity(originalModelName, payload, projectID)
+	payload, _ = sjson.SetBytes(payload, "model", alias2ModelName(originalModelName))
 
-	if strings.Contains(modelName, "claude") {
+	if strings.Contains(originalModelName, "claude") {
 		strJSON := string(payload)
 		paths := make([]string, 0)
 		util.Walk(gjson.ParseBytes(payload), "", "parametersJsonSchema", &paths)
