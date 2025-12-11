@@ -83,10 +83,43 @@ func applyReasoningEffortMetadataChatCompletions(payload []byte, metadata map[st
 	return payload
 }
 
+// ensureThinkingMaxTokens ensures that max_tokens is sufficient for thinking models.
+// Claude extended thinking requires max_tokens > thinking.budget_tokens.
+// This function auto-adjusts max_tokens to at least 16384 for models with "thinking" in their name.
+func ensureThinkingMaxTokens(payload []byte, model string) []byte {
+	// Check if this is a thinking model
+	modelLower := strings.ToLower(model)
+	if !strings.Contains(modelLower, "thinking") && !strings.Contains(modelLower, "reasoning") {
+		return payload
+	}
+
+	// Get current max_tokens
+	maxTokensResult := gjson.GetBytes(payload, "max_tokens")
+	currentMaxTokens := int64(0)
+	if maxTokensResult.Exists() {
+		currentMaxTokens = maxTokensResult.Int()
+	}
+
+	// Minimum required for thinking models (needs to be > thinking.budget_tokens)
+	const minThinkingMaxTokens = 16384
+
+	// If max_tokens is too low, set it to minimum
+	if currentMaxTokens < minThinkingMaxTokens {
+		updated, err := sjson.SetBytes(payload, "max_tokens", minThinkingMaxTokens)
+		if err == nil {
+			return updated
+		}
+	}
+
+	return payload
+}
+
 // applyPayloadConfig applies payload default and override rules from configuration
 // to the given JSON payload for the specified model.
 // Defaults only fill missing fields, while overrides always overwrite existing values.
 func applyPayloadConfig(cfg *config.Config, model string, payload []byte) []byte {
+	// First, ensure thinking models have sufficient max_tokens
+	payload = ensureThinkingMaxTokens(payload, model)
 	return applyPayloadConfigWithRoot(cfg, model, "", "", payload)
 }
 
