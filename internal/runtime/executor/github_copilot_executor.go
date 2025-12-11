@@ -349,9 +349,38 @@ func (e *GitHubCopilotExecutor) applyHeaders(r *http.Request, apiToken string) {
 	r.Header.Set("X-Request-Id", uuid.NewString())
 }
 
-// normalizeModel is a no-op as GitHub Copilot accepts model names directly.
-// Model mapping should be done at the registry level if needed.
-func (e *GitHubCopilotExecutor) normalizeModel(_ string, body []byte) []byte {
+// copilotModelMapping maps user-facing model names to GitHub Copilot API model names.
+// The Copilot API uses different naming conventions than what's shown in the UI.
+var copilotModelMapping = map[string]string{
+	// GPT models - API uses different naming
+	"gpt-5":            "gpt-5",          // Works as-is
+	"gpt-5.1":          "gpt-5.1",        // Works as-is  
+	"gpt-5-mini":       "gpt-5-mini",     // Works as-is
+	"gpt-4o":           "gpt-4o",         // Works as-is
+	"gpt-4.1":          "gpt-4.1",        // Works as-is
+	
+	// Claude models - need to use version suffixes
+	"claude-sonnet-4":   "claude-sonnet-4",   // May need claude-4-sonnet
+	"claude-sonnet-4.5": "claude-sonnet-4.5", // Works as-is
+	"claude-opus-4.5":   "claude-opus-4.5",   // Works as-is
+	"claude-haiku-4.5":  "claude-haiku-4.5",  // May need different format
+	
+	// Gemini models - API uses version format
+	"gemini-2.5-pro":    "gemini-2.5-pro",    // May need different format
+	"gemini-3-pro":      "gemini-3-pro",      // May need different format
+	
+	// Other models
+	"grok-code-fast-1":  "grok-code-fast-1",  // Works as-is
+	"gpt-5.1-codex-max": "gpt-5.1-codex-max", // Agent-only, not for chat
+}
+
+// normalizeModel converts user-facing model names to GitHub Copilot API model names.
+func (e *GitHubCopilotExecutor) normalizeModel(modelName string, body []byte) []byte {
+	// Check if we have a mapping for this model
+	if apiName, ok := copilotModelMapping[modelName]; ok && apiName != modelName {
+		log.Debugf("github-copilot: mapping model %s -> %s", modelName, apiName)
+		body, _ = sjson.SetBytes(body, "model", apiName)
+	}
 	return body
 }
 
