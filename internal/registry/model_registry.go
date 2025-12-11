@@ -632,15 +632,19 @@ func (r *ModelRegistry) ClientSupportsModel(clientID, modelID string) bool {
 
 	models, exists := r.clientModels[clientID]
 	if !exists || len(models) == 0 {
+		log.Debugf("ClientSupportsModel: clientID=%s not found in clientModels", clientID)
 		return false
 	}
 
 	for _, id := range models {
-		if strings.EqualFold(strings.TrimSpace(id), cleanModelID) {
+		// Also strip prefix from stored model ID before comparing
+		storedCleanID := StripModelPrefix(strings.TrimSpace(id))
+		if strings.EqualFold(storedCleanID, cleanModelID) {
 			return true
 		}
 	}
 
+	log.Debugf("ClientSupportsModel: model %s not found for clientID %s (have %d models)", cleanModelID, clientID, len(models))
 	return false
 }
 
@@ -784,11 +788,17 @@ func (r *ModelRegistry) GetModelProviders(modelID string) []string {
 		} else if strings.Contains(key, ":") {
 			// Provider-specific key format: "provider:modelID"
 			parts := strings.SplitN(key, ":", 2)
-			if len(parts) == 2 && parts[1] == modelID {
-				provider := parts[0]
-				if registration.Count > 0 {
-					foundProviders = append(foundProviders, provider)
-					log.Debugf("GetModelProviders: found provider=%s for model=%s (key=%s)", provider, modelID, key)
+			if len(parts) == 2 {
+				// Strip prefix from stored model ID before comparing
+				// This handles cases where models are stored with prefix like "[Antigravity] model"
+				// but searched with stripped name like "model"
+				storedModelID := StripModelPrefix(parts[1])
+				if storedModelID == modelID || parts[1] == modelID {
+					provider := parts[0]
+					if registration.Count > 0 {
+						foundProviders = append(foundProviders, provider)
+						log.Debugf("GetModelProviders: found provider=%s for model=%s (key=%s)", provider, modelID, key)
+					}
 				}
 			}
 		}

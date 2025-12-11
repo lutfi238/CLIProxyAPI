@@ -43,7 +43,7 @@ func GetProviderName(modelName string) []string {
 
 	modelProviders := registry.GetGlobalRegistry().GetModelProviders(cleanModelName)
 	log.Debugf("GetProviderName: modelProviders=%v", modelProviders)
-	
+
 	// Return only the first (highest priority) provider for the model
 	// This ensures each model is tied to a specific provider, not load-balanced across multiple
 	if len(modelProviders) > 0 {

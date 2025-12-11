@@ -1099,11 +1099,13 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 			continue
 		}
 		if modelKey != "" && registryRef != nil && !registryRef.ClientSupportsModel(candidate.ID, modelKey) {
+			log.Debugf("pickNext: auth %s (provider=%s) does NOT support model %s", candidate.ID, candidate.Provider, modelKey)
 			continue
 		}
 		candidates = append(candidates, candidate)
 	}
 	if len(candidates) == 0 {
+		log.Debugf("pickNext: no candidates found for provider=%s model=%s (total auths: %d)", provider, modelKey, len(m.auths))
 		m.mu.RUnlock()
 		return nil, nil, &Error{Code: "auth_not_found", Message: "no auth available"}
 	}

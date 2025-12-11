@@ -358,12 +358,12 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 		// For dynamic models, the extractedModelName is already normalized by parseDynamicModel
 		// so we use it as the final normalizedModel.
 		normalizedModel = extractedModelName
-	} else if specifiedProvider != "" {
-		// User specified a specific provider via prefix - use ONLY that provider
-		providers = []string{specifiedProvider}
 	} else {
-		// No specific provider requested - get all available providers for this model
+		// Use registry lookup for all requests (with or without prefix)
+		// This ensures consistent model matching through the registry
 		providers = util.GetProviderName(normalizedModel)
+
+		// Fallback 1: Try original model name from thinking suffix
 		if len(providers) == 0 && metadata != nil {
 			if originalRaw, ok := metadata[util.ThinkingOriginalModelMetadataKey]; ok {
 				if originalModel, okStr := originalRaw.(string); okStr {
@@ -376,6 +376,11 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 					}
 				}
 			}
+		}
+
+		// Fallback 2: Use specified provider from prefix if registry lookup failed
+		if len(providers) == 0 && specifiedProvider != "" {
+			providers = []string{specifiedProvider}
 		}
 	}
 
