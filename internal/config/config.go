@@ -83,6 +83,11 @@ type Config struct {
 	// Payload defines default and override rules for provider payload parameters.
 	Payload PayloadConfig `yaml:"payload" json:"payload"`
 
+	// ModelPrefixProvider when true, prefixes model names with their provider name in brackets.
+	// For example, "gemini-2.5-flash" from antigravity becomes "[Antigravity] gemini-2.5-flash".
+	// This helps identify which provider each model comes from when using multiple providers.
+	ModelPrefixProvider bool `yaml:"model-prefix-provider" json:"model-prefix-provider"`
+
 	legacyMigrationPending bool `yaml:"-" json:"-"`
 }
 

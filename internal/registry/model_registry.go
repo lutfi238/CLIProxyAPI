@@ -16,8 +16,10 @@ import (
 
 // ModelInfo represents information about an available model
 type ModelInfo struct {
-	// ID is the unique identifier for the model
+	// ID is the unique identifier for the model (may include provider prefix for display)
 	ID string `json:"id"`
+	// OriginalID is the unprefixed model ID used for API calls to upstream providers
+	OriginalID string `json:"original_id,omitempty"`
 	// Object type for the model (typically "model")
 	Object string `json:"object"`
 	// Created timestamp when the model was created
@@ -97,6 +99,58 @@ type ModelRegistry struct {
 var globalRegistry *ModelRegistry
 var registryOnce sync.Once
 
+// modelPrefixProvider controls whether model names are prefixed with provider names
+var modelPrefixProvider bool
+var modelPrefixMutex sync.RWMutex
+
+// SetModelPrefixProvider enables or disables provider prefixing for model names.
+// When enabled, model names will be prefixed with "[Provider] " (e.g., "[Antigravity] gemini-2.5-flash").
+func SetModelPrefixProvider(enabled bool) {
+	modelPrefixMutex.Lock()
+	defer modelPrefixMutex.Unlock()
+	modelPrefixProvider = enabled
+}
+
+// GetModelPrefixProvider returns whether provider prefixing is enabled.
+func GetModelPrefixProvider() bool {
+	modelPrefixMutex.RLock()
+	defer modelPrefixMutex.RUnlock()
+	return modelPrefixProvider
+}
+
+// formatModelID formats a model ID with optional provider prefix.
+func formatModelID(modelID, provider string) string {
+	if !GetModelPrefixProvider() || provider == "" {
+		return modelID
+	}
+	// Capitalize first letter of provider for display
+	displayProvider := strings.ToUpper(provider[:1]) + provider[1:]
+	return fmt.Sprintf("[%s] %s", displayProvider, modelID)
+}
+
+// StripModelPrefix removes the provider prefix from a model ID if present.
+// For example, "[Antigravity] gemini-2.5-flash" becomes "gemini-2.5-flash".
+func StripModelPrefix(modelID string) string {
+	if !strings.HasPrefix(modelID, "[") {
+		return modelID
+	}
+	idx := strings.Index(modelID, "] ")
+	if idx == -1 {
+		return modelID
+	}
+	return modelID[idx+2:]
+}
+
+// GetOriginalModelID returns the original model ID for API calls.
+// It first checks if the model has an OriginalID set, otherwise strips any prefix.
+func GetOriginalModelID(modelID string) string {
+	reg := GetGlobalRegistry()
+	if info := reg.GetModelInfo(modelID); info != nil && info.OriginalID != "" {
+		return info.OriginalID
+	}
+	return StripModelPrefix(modelID)
+}
+
 // GetGlobalRegistry returns the global model registry instance
 func GetGlobalRegistry() *ModelRegistry {
 	registryOnce.Do(func() {
@@ -128,13 +182,20 @@ func (r *ModelRegistry) RegisterClient(clientID, clientProvider string, models [
 		if model == nil || model.ID == "" {
 			continue
 		}
-		rawModelIDs = append(rawModelIDs, model.ID)
-		newCounts[model.ID]++
-		if _, exists := newModels[model.ID]; exists {
+		// Store original ID and apply provider prefix if enabled
+		originalID := model.ID
+		prefixedID := formatModelID(model.ID, provider)
+		rawModelIDs = append(rawModelIDs, prefixedID)
+		newCounts[prefixedID]++
+		if _, exists := newModels[prefixedID]; exists {
 			continue
 		}
-		newModels[model.ID] = model
-		uniqueModelIDs = append(uniqueModelIDs, model.ID)
+		// Clone model and update ID with prefix, preserve original ID for API calls
+		prefixedModel := cloneModelInfo(model)
+		prefixedModel.ID = prefixedID
+		prefixedModel.OriginalID = originalID
+		newModels[prefixedID] = prefixedModel
+		uniqueModelIDs = append(uniqueModelIDs, prefixedID)
 	}
 
 	if len(uniqueModelIDs) == 0 {
