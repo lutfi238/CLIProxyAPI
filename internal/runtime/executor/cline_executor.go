@@ -125,6 +125,10 @@ func (e *ClineExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 	}
 
 	appendAPIResponseChunk(ctx, e.cfg, data)
+
+	// Unwrap Cline API response format: {"data": {...}, "success": true} -> {...}
+	data = unwrapClineResponse(data)
+
 	reporter.publish(ctx, parseOpenAIUsage(data))
 
 	// Try new translator first if enabled
@@ -466,4 +470,53 @@ func (e *ClineExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*
 	now := time.Now().Format(time.RFC3339)
 	auth.Metadata["last_refresh"] = now
 	return auth, nil
+}
+
+// unwrapClineResponse extracts the inner "data" object from Cline API's wrapped response format.
+// Cline API returns: {"data": {...}, "success": true}
+// We need to extract just the inner {...} part for OpenAI-compatible processing.
+func unwrapClineResponse(data []byte) []byte {
+	// Quick check if response looks wrapped
+	if !bytes.Contains(data, []byte(`"data":`)) || !bytes.Contains(data, []byte(`"success":`)) {
+		return data // Not wrapped, return as-is
+	}
+
+	// Try to extract the "data" field content
+	start := bytes.Index(data, []byte(`"data":`))
+	if start == -1 {
+		return data
+	}
+
+	// Find the opening brace after "data":
+	contentStart := start + 7 // len(`"data":`)
+	for contentStart < len(data) && (data[contentStart] == ' ' || data[contentStart] == '\t' || data[contentStart] == '\n' || data[contentStart] == '\r') {
+		contentStart++
+	}
+
+	if contentStart >= len(data) || data[contentStart] != '{' {
+		return data
+	}
+
+	// Find matching closing brace
+	braceCount := 0
+	contentEnd := contentStart
+	for i := contentStart; i < len(data); i++ {
+		if data[i] == '{' {
+			braceCount++
+		} else if data[i] == '}' {
+			braceCount--
+			if braceCount == 0 {
+				contentEnd = i + 1
+				break
+			}
+		}
+	}
+
+	if contentEnd > contentStart {
+		extracted := data[contentStart:contentEnd]
+		log.Debugf("cline: unwrapped response from %d to %d bytes", len(data), len(extracted))
+		return extracted
+	}
+
+	return data
 }
