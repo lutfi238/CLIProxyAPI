@@ -346,7 +346,26 @@ func (e *KiroExecutor) buildHTTPRequest(rc *requestContext, url string) (*http.R
 	if rc.token != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+rc.token)
 	}
+
+	// Always set Copilot-Vision-Request header for Kiro
+	// This is required for vision requests via Amazon Q/Kiro backend
+	httpReq.Header.Set("Copilot-Vision-Request", "true")
+	log.Infof("kiro: sending request to %s with Copilot-Vision-Request=true", url)
+
 	return httpReq, nil
+}
+
+// hasKiroImageContent checks if the request body contains image content.
+func hasKiroImageContent(body []byte) bool {
+	// Check for various image content indicators
+	return bytes.Contains(body, []byte(`"image_url"`)) ||
+		bytes.Contains(body, []byte(`"type":"image"`)) ||
+		bytes.Contains(body, []byte(`"type": "image"`)) ||
+		bytes.Contains(body, []byte(`"inline_data"`)) ||
+		bytes.Contains(body, []byte(`"inlineData"`)) ||
+		bytes.Contains(body, []byte(`data:image/`)) || // Base64 data URI
+		bytes.Contains(body, []byte(`"image"`)) || // Generic image type
+		bytes.Contains(body, []byte(`"source":{"type":"base64"`)) // Anthropic style
 }
 
 func (e *KiroExecutor) Execute(ctx context.Context, auth *coreauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
