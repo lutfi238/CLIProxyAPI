@@ -80,3 +80,12 @@ venv/
 
 # MCP server
 mcp-cliproxy/
+
+# Cline fork (VSCode extension)
+tools/cline-fork/node_modules/
+tools/cline-fork/.git/
+tools/cline-fork/*.vsix
+tools/cline-fork/dist/
+tools/cline-fork/out/
+tools/cline-fork/.vscode-test/
+tools/cline-fork/assets/docs/
