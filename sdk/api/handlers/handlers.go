@@ -362,6 +362,28 @@ func (h *BaseAPIHandler) getRequestDetails(modelName string) (providers []string
 		// User explicitly specified a provider via prefix (e.g., "[Kiro] model")
 		// ONLY use that provider - do not fall back to other providers
 		providers = []string{specifiedProvider}
+
+		// Check if the specified provider actually supports the ORIGINAL model name (before thinking suffix stripping)
+		// This fixes issues where a provider registers "model-thinking" but normalization strips it to "model",
+		// which the provider might NOT support (e.g. Antigravity with gemini-claude-opus-4-5-thinking).
+		if metadata != nil {
+			if originalRaw, ok := metadata[util.ThinkingOriginalModelMetadataKey]; ok {
+				if originalModel, okStr := originalRaw.(string); okStr {
+					originalModel = strings.TrimSpace(originalModel)
+					// Normalize the original model ID to remove any prefix (e.g. [Antigravity] ...) just in case
+					cleanOriginalModel := util.NormalizeIncomingModelID(originalModel)
+
+					if cleanOriginalModel != "" && !strings.EqualFold(cleanOriginalModel, normalizedModel) {
+						// Check if the specified provider supports this full model name
+						supportedProviders := util.GetProviderName(cleanOriginalModel)
+						if util.InArray(supportedProviders, specifiedProvider) {
+							// Provider supports the FULL name, so use it instead of the stripped one
+							normalizedModel = cleanOriginalModel
+						}
+					}
+				}
+			}
+		}
 	} else {
 		// No provider specified - use registry lookup to find all available providers
 		providers = util.GetProviderName(normalizedModel)

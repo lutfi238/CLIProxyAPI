@@ -1089,7 +1089,9 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 		return nil, nil, &Error{Code: "executor_not_found", Message: "executor not registered"}
 	}
 	candidates := make([]*Auth, 0, len(m.auths))
-	modelKey := strings.TrimSpace(model)
+	// Strip provider prefix from model name for consistent lookup
+	// e.g., "[Antigravity] gemini-2.5-flash" -> "gemini-2.5-flash"
+	modelKey := registry.StripModelPrefix(strings.TrimSpace(model))
 	registryRef := registry.GetGlobalRegistry()
 	for _, candidate := range m.auths {
 		if candidate.Provider != provider || candidate.Disabled {
