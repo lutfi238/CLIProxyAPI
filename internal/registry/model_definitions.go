@@ -555,59 +555,35 @@ func GetOpenAIModels() []*ModelInfo {
 			MaxCompletionTokens: 128000,
 			SupportedParameters: []string{"tools"},
 		},
-		// GPT-5.2 Series (December 2025)
-		{
-			ID:                  "gpt-5.2",
-			Object:              "model",
-			Created:             1765324800,
-			OwnedBy:             "openai",
-			Type:                "openai",
-			Version:             "gpt-5.2-2025-12-09",
-			DisplayName:         "GPT 5.2",
-			Description:         "OpenAI GPT-5.2 - Most capable model for professional knowledge work with state-of-the-art benchmarks.",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-			SupportedParameters: []string{"tools"},
-		},
-		{
-			ID:                  "gpt-5.2-instant",
-			Object:              "model",
-			Created:             1765324800,
-			OwnedBy:             "openai",
-			Type:                "openai",
-			Version:             "gpt-5.2-2025-12-09",
-			DisplayName:         "GPT 5.2 Instant",
-			Description:         "OpenAI GPT-5.2 Instant - Fast and optimized version for quick responses.",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-			SupportedParameters: []string{"tools"},
-		},
-		{
-			ID:                  "gpt-5.2-thinking",
-			Object:              "model",
-			Created:             1765324800,
-			OwnedBy:             "openai",
-			Type:                "openai",
-			Version:             "gpt-5.2-2025-12-09",
-			DisplayName:         "GPT 5.2 Thinking",
-			Description:         "OpenAI GPT-5.2 Thinking - Enhanced reasoning model for multi-step problems and complex analysis.",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-			SupportedParameters: []string{"tools"},
-		},
-		{
-			ID:                  "gpt-5.2-pro",
-			Object:              "model",
-			Created:             1765324800,
-			OwnedBy:             "openai",
-			Type:                "openai",
-			Version:             "gpt-5.2-2025-12-09",
-			DisplayName:         "GPT 5.2 Pro",
-			Description:         "OpenAI GPT-5.2 Pro - Premium tier with maximum capabilities for enterprise and research.",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-			SupportedParameters: []string{"tools"},
-		},
+		// === GPT-5.2 Series (December 2025) - DISABLED: Not yet available via API ===
+		// {
+		// 	ID:                  "gpt-5.2",
+		// 	Object:              "model",
+		// 	Created:             1765324800,
+		// 	OwnedBy:             "openai",
+		// 	Type:                "openai",
+		// 	Version:             "gpt-5.2-2025-12-09",
+		// 	DisplayName:         "GPT 5.2",
+		// 	Description:         "OpenAI GPT-5.2 - Most capable model for professional knowledge work with state-of-the-art benchmarks.",
+		// 	ContextLength:       400000,
+		// 	MaxCompletionTokens: 128000,
+		// 	SupportedParameters: []string{"tools"},
+		// },
+		// {
+		// 	ID:                  "gpt-5.2-instant",
+		// 	DisplayName:         "GPT 5.2 Instant",
+		// 	Description:         "OpenAI GPT-5.2 Instant - Fast and optimized version for quick responses.",
+		// },
+		// {
+		// 	ID:                  "gpt-5.2-thinking",
+		// 	DisplayName:         "GPT 5.2 Thinking",
+		// 	Description:         "OpenAI GPT-5.2 Thinking - Enhanced reasoning model for multi-step problems.",
+		// },
+		// {
+		// 	ID:                  "gpt-5.2-pro",
+		// 	DisplayName:         "GPT 5.2 Pro",
+		// 	Description:         "OpenAI GPT-5.2 Pro - Premium tier with maximum capabilities.",
+		// },
 	}
 }
 
@@ -813,57 +789,35 @@ func GetGitHubCopilotModels() []*ModelInfo {
 			ContextLength:       200000,
 			MaxCompletionTokens: 32768,
 		},
-		// GPT-5.2 Series (December 2025)
-		{
-			ID:                  "gpt-5.2",
-			Object:              "model",
-			Created:             now,
-			OwnedBy:             "copilot",
-			Type:                "copilot",
-			DisplayName:         "GPT-5.2",
-			Description:         "OpenAI GPT-5.2 via Copilot - Most capable model for professional knowledge work",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-		},
-		{
-			ID:                  "gpt-5.2-instant",
-			Object:              "model",
-			Created:             now,
-			OwnedBy:             "copilot",
-			Type:                "copilot",
-			DisplayName:         "GPT-5.2 Instant",
-			Description:         "OpenAI GPT-5.2 Instant via Copilot - Fast and optimized",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-		},
-		{
-			ID:                  "gpt-5.2-thinking",
-			Object:              "model",
-			Created:             now,
-			OwnedBy:             "copilot",
-			Type:                "copilot",
-			DisplayName:         "GPT-5.2 Thinking",
-			Description:         "OpenAI GPT-5.2 Thinking via Copilot - Enhanced reasoning for complex problems",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-		},
-		{
-			ID:                  "gpt-5.2-pro",
-			Object:              "model",
-			Created:             now,
-			OwnedBy:             "copilot",
-			Type:                "copilot",
-			DisplayName:         "GPT-5.2 Pro",
-			Description:         "OpenAI GPT-5.2 Pro via Copilot - Premium tier with maximum capabilities",
-			ContextLength:       400000,
-			MaxCompletionTokens: 128000,
-		},
 		// === MODELS NOT AVAILABLE VIA CHAT API (kept for reference) ===
 		// NOTE: The following models are listed in Copilot UI but may not work via API:
 		// - gpt-5, gpt-5.1: Currently in staged rollout, may work later
 		// - claude-sonnet-4, claude-haiku-4.5: May require Pro+ or Business plan
 		// - gemini-2.5-pro, gemini-3-pro: Preview models, limited availability
 		// - gpt-5.1-codex-max: Agent-only model, not accessible via /chat/completions
+		// - gpt-5.2, gpt-5.2-instant, gpt-5.2-thinking, gpt-5.2-pro: Not yet available (Dec 2025 - staged rollout)
+		//
+		// === GPT-5.2 Series (December 2025) - DISABLED: Not yet available via API ===
+		// {
+		// 	ID:          "gpt-5.2",
+		// 	DisplayName: "GPT-5.2",
+		// 	Description: "OpenAI GPT-5.2 via Copilot - Most capable model for professional knowledge work",
+		// },
+		// {
+		// 	ID:          "gpt-5.2-instant",
+		// 	DisplayName: "GPT-5.2 Instant",
+		// 	Description: "OpenAI GPT-5.2 Instant via Copilot - Fast and optimized",
+		// },
+		// {
+		// 	ID:          "gpt-5.2-thinking",
+		// 	DisplayName: "GPT-5.2 Thinking",
+		// 	Description: "OpenAI GPT-5.2 Thinking via Copilot - Enhanced reasoning for complex problems",
+		// },
+		// {
+		// 	ID:          "gpt-5.2-pro",
+		// 	DisplayName: "GPT-5.2 Pro",
+		// 	Description: "OpenAI GPT-5.2 Pro via Copilot - Premium tier with maximum capabilities",
+		// },
 	}
 }
 
