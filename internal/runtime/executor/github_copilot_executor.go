@@ -321,6 +321,25 @@ func (e *GitHubCopilotExecutor) ensureAPIToken(ctx context.Context, auth *clipro
 		return "", statusErr{code: http.StatusUnauthorized, msg: fmt.Sprintf("failed to get copilot api token: %v", err)}
 	}
 
+	// Auto-fetch models on first token retrieval for this client
+	clientID := auth.ID
+	if clientID == "" {
+		clientID = "copilot-" + accessToken[:8]
+	}
+	e.mu.RLock()
+	_, alreadyFetched := e.cache[accessToken]
+	e.mu.RUnlock()
+	if !alreadyFetched {
+		// Fetch and register models in background to not block request
+		go func() {
+			fetchCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if fetchErr := copilotAuth.FetchAndRegisterModels(fetchCtx, apiToken, clientID); fetchErr != nil {
+				log.Warnf("copilot: auto-fetch models failed for %s: %v", clientID, fetchErr)
+			}
+		}()
+	}
+
 	// Cache the token with thread-safe access
 	expiresAt := time.Now().Add(githubCopilotTokenCacheTTL)
 	if apiToken.ExpiresAt > 0 {
@@ -356,11 +375,15 @@ func (e *GitHubCopilotExecutor) applyHeaders(r *http.Request, apiToken string) {
 // The Copilot API uses different naming conventions than what's shown in the UI.
 var copilotModelMapping = map[string]string{
 	// GPT models - API uses different naming
-	"gpt-5":      "gpt-5",      // Works as-is
-	"gpt-5.1":    "gpt-5.1",    // Works as-is
-	"gpt-5-mini": "gpt-5-mini", // Works as-is
-	"gpt-4o":     "gpt-4o",     // Works as-is
-	"gpt-4.1":    "gpt-4.1",    // Works as-is
+	"gpt-5":            "gpt-5",            // Works as-is
+	"gpt-5.1":          "gpt-5.1",          // Works as-is
+	"gpt-5-mini":       "gpt-5-mini",       // Works as-is
+	"gpt-4o":           "gpt-4o",           // Works as-is
+	"gpt-4.1":          "gpt-4.1",          // Works as-is
+	"gpt-5.2":          "gpt-5.2",          // GPT-5.2 (Dec 2025)
+	"gpt-5.2-instant":  "gpt-5.2-instant",  // GPT-5.2 Instant
+	"gpt-5.2-thinking": "gpt-5.2-thinking", // GPT-5.2 Thinking (reasoning)
+	"gpt-5.2-pro":      "gpt-5.2-pro",      // GPT-5.2 Pro
 
 	// Claude models - need to use version suffixes
 	"claude-sonnet-4":   "claude-sonnet-4",   // May need claude-4-sonnet
