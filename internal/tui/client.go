@@ -239,6 +239,65 @@ func (c *Client) GetLogs(after int64, limit int) ([]string, int64, error) {
 	return lines, latest, nil
 }
 
+// RequestLogSummary is a TUI-side view of one per-request log file.
+type RequestLogSummary struct {
+	Name     string
+	ID       string
+	Path     string
+	Size     int64
+	Modified int64
+	IsError  bool
+	Method   string
+	Model    string
+	Effort   string
+	Provider string
+	Status   int
+}
+
+// ListRequestLogs fetches the recent per-request log files.
+// limit <= 0 lets the server choose a sensible default (currently 100).
+func (c *Client) ListRequestLogs(limit int) ([]RequestLogSummary, bool, error) {
+	path := "/v0/management/request-logs"
+	if limit > 0 {
+		query := url.Values{}
+		query.Set("limit", strconv.Itoa(limit))
+		path += "?" + query.Encode()
+	}
+	wrapper, err := c.getJSON(path)
+	if err != nil {
+		return nil, false, err
+	}
+	requestLogEnabled := getBool(wrapper, "request_log_enabled")
+	rawList, _ := extractList(wrapper, "files")
+	out := make([]RequestLogSummary, 0, len(rawList))
+	for _, m := range rawList {
+		entry := RequestLogSummary{
+			Name:     getString(m, "name"),
+			ID:       getString(m, "id"),
+			Path:     getString(m, "path"),
+			Size:     int64(getFloat(m, "size")),
+			Modified: int64(getFloat(m, "modified")),
+			IsError:  getBool(m, "is_error"),
+			Method:   getString(m, "method"),
+			Model:    getString(m, "model"),
+			Effort:   getString(m, "effort"),
+			Provider: getString(m, "provider"),
+			Status:   int(getFloat(m, "status")),
+		}
+		out = append(out, entry)
+	}
+	return out, requestLogEnabled, nil
+}
+
+// GetRequestLogContent downloads the full text content of a request log file
+// identified by its trailing request ID. Returns the raw bytes verbatim.
+func (c *Client) GetRequestLogContent(requestID string) ([]byte, error) {
+	if strings.TrimSpace(requestID) == "" {
+		return nil, fmt.Errorf("missing request id")
+	}
+	return c.get("/v0/management/request-log-by-id/" + url.PathEscape(requestID))
+}
+
 // GetAPIKeys fetches the list of API keys.
 // API returns {"api-keys": [...]}.
 func (c *Client) GetAPIKeys() ([]string, error) {

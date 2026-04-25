@@ -50,8 +50,8 @@ var locales = map[string]map[string]string{
 // ──────────────────────────────────────────
 // Tab names
 // ──────────────────────────────────────────
-var zhTabNames = []string{"仪表盘", "配置", "认证文件", "API 密钥", "OAuth", "使用统计", "日志"}
-var enTabNames = []string{"Dashboard", "Config", "Auth Files", "API Keys", "OAuth", "Usage", "Logs"}
+var zhTabNames = []string{"仪表盘", "配置", "认证文件", "API 密钥", "OAuth", "使用统计", "请求日志", "日志"}
+var enTabNames = []string{"Dashboard", "Config", "Auth Files", "API Keys", "OAuth", "Usage", "Requests", "Logs"}
 
 // TabNames returns tab names in the current locale.
 func TabNames() []string {
@@ -211,6 +211,30 @@ var zhStrings = map[string]string{
 	"logs_lines":       "行数",
 	"logs_help":        " [a] 自动滚动 • [c] 清除 • [1] 全部 [2] info+ [3] warn+ [4] error • [↑↓] 滚动",
 	"logs_waiting":     "  等待日志输出...",
+
+	// ── Request Logs ──
+	"reqlogs_title":         "🛰  请求日志",
+	"reqlogs_help_list":     " [↑↓/jk] 导航 • [Enter] 查看 • [r] 刷新 • [f] 过滤错误 • [/] 搜索 • [Esc] 清除搜索",
+	"reqlogs_help_detail":   " [Esc/q] 返回列表 • [↑↓] 滚动 • [r] 重新加载",
+	"reqlogs_no_data":       "  暂无请求日志。请在配置中开启 request-log 后再发起一次请求。",
+	"reqlogs_disabled_hint": "⚠ 当前 request-log 未启用，仅会记录失败请求 (error-*.log)。",
+	"reqlogs_count":         "条目",
+	"reqlogs_filter_errors": "仅错误",
+	"reqlogs_filter_all":    "全部",
+	"reqlogs_search_prompt": "搜索: ",
+	"reqlogs_col_time":      "时间",
+	"reqlogs_col_method":    "方法",
+	"reqlogs_col_provider":  "提供方",
+	"reqlogs_col_model":     "模型",
+	"reqlogs_col_effort":    "思考强度",
+	"reqlogs_col_status":    "状态",
+	"reqlogs_col_size":      "大小",
+	"reqlogs_col_id":        "ID",
+	"reqlogs_loading":       "  正在加载请求日志...",
+	"reqlogs_loaded":        "已加载 %d 条记录",
+	"reqlogs_loading_file":  "  正在读取日志文件...",
+	"reqlogs_no_match":      "  没有匹配的记录",
+	"reqlogs_effort_none":   "—",
 }
 
 var enStrings = map[string]string{
@@ -363,4 +387,28 @@ var enStrings = map[string]string{
 	"logs_lines":       "Lines",
 	"logs_help":        " [a] Auto-scroll • [c] Clear • [1] All [2] info+ [3] warn+ [4] error • [↑↓] Scroll",
 	"logs_waiting":     "  Waiting for log output...",
+
+	// ── Request Logs ──
+	"reqlogs_title":         "🛰  Request Logs",
+	"reqlogs_help_list":     " [↑↓/jk] Navigate • [Enter] View • [r] Refresh • [f] Errors only • [/] Search • [Esc] Clear search",
+	"reqlogs_help_detail":   " [Esc/q] Back to list • [↑↓] Scroll • [r] Reload",
+	"reqlogs_no_data":       "  No request logs yet. Enable request-log in Config and make a request.",
+	"reqlogs_disabled_hint": "⚠ request-log is OFF — only failed requests are saved (error-*.log).",
+	"reqlogs_count":         "entries",
+	"reqlogs_filter_errors": "errors only",
+	"reqlogs_filter_all":    "all",
+	"reqlogs_search_prompt": "Search: ",
+	"reqlogs_col_time":      "Time",
+	"reqlogs_col_method":    "Method",
+	"reqlogs_col_provider":  "Provider",
+	"reqlogs_col_model":     "Model",
+	"reqlogs_col_effort":    "Effort",
+	"reqlogs_col_status":    "Status",
+	"reqlogs_col_size":      "Size",
+	"reqlogs_col_id":        "ID",
+	"reqlogs_loading":       "  Loading request logs...",
+	"reqlogs_loaded":        "Loaded %d entries",
+	"reqlogs_loading_file":  "  Loading log file...",
+	"reqlogs_no_match":      "  No matching entries",
+	"reqlogs_effort_none":   "—",
 }

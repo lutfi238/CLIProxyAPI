@@ -19,8 +19,12 @@ const (
 	tabAPIKeys
 	tabOAuth
 	tabUsage
+	tabRequests
 	tabLogs
 )
+
+// totalTabs is the count of tab identifiers above; keep in sync.
+const totalTabs = 8
 
 // App is the root bubbletea model that contains all tab sub-models.
 type App struct {
@@ -41,6 +45,7 @@ type App struct {
 	keys      keysTabModel
 	oauth     oauthTabModel
 	usage     usageTabModel
+	requests  requestsTabModel
 	logs      logsTabModel
 
 	client *Client
@@ -50,7 +55,7 @@ type App struct {
 	ready  bool
 
 	// Track which tabs have been initialized (fetched data)
-	initialized [7]bool
+	initialized [totalTabs]bool
 }
 
 type authConnectMsg struct {
@@ -82,9 +87,10 @@ func NewApp(port int, secretKey string, hook *LogHook) App {
 		keys:          newKeysTabModel(client),
 		oauth:         newOAuthTabModel(client),
 		usage:         newUsageTabModel(client),
+		requests:      newRequestsTabModel(client),
 		logs:          newLogsTabModel(client, hook),
 		client:        client,
-		initialized: [7]bool{
+		initialized: [totalTabs]bool{
 			tabDashboard: true,
 			tabLogs:      true,
 		},
@@ -92,7 +98,7 @@ func NewApp(port int, secretKey string, hook *LogHook) App {
 
 	app.refreshTabs()
 	if authRequired {
-		app.initialized = [7]bool{}
+		app.initialized = [totalTabs]bool{}
 	}
 	app.setAuthInputPrompt()
 	return app
@@ -129,6 +135,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.keys.SetSize(contentW, contentH)
 		a.oauth.SetSize(contentW, contentH)
 		a.usage.SetSize(contentW, contentH)
+		a.requests.SetSize(contentW, contentH)
 		a.logs.SetSize(contentW, contentH)
 		return a, nil
 
@@ -142,7 +149,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.authenticated = true
 		a.logsEnabled = a.standalone || isLogsEnabledFromConfig(msg.cfg)
 		a.refreshTabs()
-		a.initialized = [7]bool{}
+		a.initialized = [totalTabs]bool{}
 		a.initialized[tabDashboard] = true
 		cmds := []tea.Cmd{a.dashboard.Init()}
 		if a.logsEnabled {
@@ -260,6 +267,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.oauth, cmd = a.oauth.Update(msg)
 	case tabUsage:
 		a.usage, cmd = a.usage.Update(msg)
+	case tabRequests:
+		a.requests, cmd = a.requests.Update(msg)
 	case tabLogs:
 		a.logs, cmd = a.logs.Update(msg)
 	}
@@ -324,6 +333,8 @@ func (a *App) initTabIfNeeded(_ int) tea.Cmd {
 		return a.oauth.Init()
 	case tabUsage:
 		return a.usage.Init()
+	case tabRequests:
+		return a.requests.Init()
 	case tabLogs:
 		if !a.logsEnabled {
 			return nil
@@ -362,6 +373,8 @@ func (a App) View() string {
 		sb.WriteString(a.oauth.View())
 	case tabUsage:
 		sb.WriteString(a.usage.View())
+	case tabRequests:
+		sb.WriteString(a.requests.View())
 	case tabLogs:
 		if a.logsEnabled {
 			sb.WriteString(a.logs.View())
@@ -530,6 +543,10 @@ func (a App) broadcastToAllTabs(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	a.usage, cmd = a.usage.Update(msg)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+	a.requests, cmd = a.requests.Update(msg)
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 	}
