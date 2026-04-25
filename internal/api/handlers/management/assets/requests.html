@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CLIProxyAPI · Request Logs</title>
+    <style>
+      :root {
+        --bg: #0f0f1a;
+        --bg-elev: #1a1b27;
+        --bg-card: #1f2030;
+        --bg-row: #20212f;
+        --bg-row-hover: #2a2c3d;
+        --bg-row-selected: #312f4f;
+        --border: #2c2e3e;
+        --border-strong: #3a3d52;
+        --text: #e6e6f0;
+        --text-muted: #8b8d9a;
+        --primary: #8b5cf6;
+        --primary-strong: #a78bfa;
+        --success: #22c55e;
+        --warn: #eab308;
+        --error: #ef4444;
+        --pink: #ec4899;
+        --info: #3b82f6;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        --radius: 10px;
+        --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 14px;
+        line-height: 1.45;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      a {
+        color: var(--primary-strong);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      button {
+        cursor: pointer;
+        font-family: inherit;
+        font-size: inherit;
+      }
+
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+        font-size: inherit;
+      }
+
+      /* ─────────── Header ─────────── */
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 20px;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+      .header .subtitle {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .header .spacer {
+        flex: 1;
+      }
+      .header .pill {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        color: var(--text-muted);
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+      .header .pill.warn {
+        border-color: rgba(234, 179, 8, 0.5);
+        color: var(--warn);
+      }
+      .header .pill.ok {
+        border-color: rgba(34, 197, 94, 0.5);
+        color: var(--success);
+      }
+
+      .btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        padding: 6px 12px;
+        border-radius: 8px;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .btn:hover {
+        background: var(--bg-row-hover);
+        border-color: var(--primary);
+      }
+      .btn.primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+      .btn.primary:hover {
+        background: var(--primary-strong);
+        border-color: var(--primary-strong);
+      }
+      .btn.ghost {
+        background: transparent;
+      }
+      .btn.danger {
+        border-color: rgba(239, 68, 68, 0.5);
+        color: var(--error);
+      }
+      .btn.danger:hover {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: var(--error);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* ─────────── Toolbar ─────────── */
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      .toolbar input[type="search"] {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        padding: 7px 12px;
+        border-radius: 8px;
+        outline: none;
+        min-width: 280px;
+      }
+      .toolbar input[type="search"]:focus {
+        border-color: var(--primary);
+      }
+      .toolbar label.checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+        cursor: pointer;
+        user-select: none;
+      }
+      .toolbar label.checkbox input {
+        accent-color: var(--primary);
+      }
+      .toolbar .stats {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-left: auto;
+      }
+
+      /* ─────────── Main / Table ─────────── */
+
+      .main {
+        flex: 1;
+        overflow: auto;
+        padding: 0 20px 20px;
+      }
+
+      .table-wrap {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-top: 16px;
+        overflow: hidden;
+      }
+
+      table.requests {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.requests thead th {
+        text-align: left;
+        background: var(--bg-elev);
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-strong);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      table.requests tbody tr {
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      table.requests tbody tr:hover {
+        background: var(--bg-row-hover);
+      }
+      table.requests tbody tr.selected {
+        background: var(--bg-row-selected);
+      }
+      table.requests tbody tr.is-error {
+        background: rgba(239, 68, 68, 0.05);
+      }
+      table.requests tbody tr.is-error:hover {
+        background: rgba(239, 68, 68, 0.12);
+      }
+      table.requests td {
+        padding: 9px 12px;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      table.requests td.col-time {
+        white-space: nowrap;
+        color: var(--text-muted);
+      }
+      table.requests td.col-method {
+        text-align: center;
+        color: var(--text-muted);
+      }
+      table.requests td.col-model {
+        font-weight: 500;
+      }
+      table.requests td.col-effort {
+        text-align: center;
+      }
+      table.requests td.col-status {
+        text-align: center;
+      }
+      table.requests td.col-id {
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        font-family: var(--mono);
+      }
+      .badge.muted {
+        background: rgba(139, 141, 154, 0.15);
+        color: var(--text-muted);
+      }
+      .badge.low {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--info);
+      }
+      .badge.medium {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--success);
+      }
+      .badge.high {
+        background: rgba(236, 72, 153, 0.18);
+        color: var(--pink);
+      }
+      .badge.xhigh {
+        background: rgba(236, 72, 153, 0.3);
+        color: white;
+        font-weight: 600;
+      }
+      .badge.minimal,
+      .badge.none {
+        background: rgba(139, 141, 154, 0.15);
+        color: var(--text-muted);
+      }
+      .badge.status-2 {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--success);
+      }
+      .badge.status-3 {
+        background: rgba(234, 179, 8, 0.15);
+        color: var(--warn);
+      }
+      .badge.status-4,
+      .badge.status-5 {
+        background: rgba(239, 68, 68, 0.18);
+        color: var(--error);
+      }
+      .badge.method-POST {
+        background: rgba(139, 92, 246, 0.18);
+        color: var(--primary-strong);
+      }
+      .badge.method-GET {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--info);
+      }
+
+      /* ─────────── Empty / loading ─────────── */
+
+      .empty {
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--text-muted);
+      }
+      .empty .icon {
+        font-size: 28px;
+        margin-bottom: 12px;
+        opacity: 0.6;
+      }
+      .empty h3 {
+        margin: 0 0 8px 0;
+        color: var(--text);
+        font-weight: 600;
+      }
+      .empty .hint {
+        font-size: 12px;
+        max-width: 540px;
+        margin: 12px auto 0;
+        line-height: 1.6;
+      }
+      .empty code {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--primary-strong);
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--border-strong);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: -2px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ─────────── Modal ─────────── */
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 8, 16, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 50;
+      }
+      .modal-backdrop.hidden {
+        display: none;
+      }
+
+      .modal {
+        background: var(--bg-elev);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 1100px;
+        max-height: calc(100vh - 40px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .modal.small {
+        max-width: 420px;
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .modal-header .close {
+        background: transparent;
+        border: 0;
+        color: var(--text-muted);
+        font-size: 22px;
+        line-height: 1;
+        padding: 0 6px;
+        margin-left: auto;
+      }
+      .modal-header .close:hover {
+        color: var(--text);
+      }
+      .modal-body {
+        flex: 1;
+        padding: 16px 18px;
+        overflow: auto;
+      }
+      .modal-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      /* ─────────── Detail summary chips ─────────── */
+
+      .detail-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .detail-summary .chip {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .detail-summary .chip strong {
+        color: var(--text);
+        font-weight: 500;
+        font-family: var(--mono);
+      }
+
+      pre.detail-content {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 60vh;
+        margin: 0;
+      }
+      pre.detail-content .req-section {
+        color: var(--primary-strong);
+        font-weight: 600;
+      }
+      pre.detail-content .resp-section {
+        color: var(--success);
+        font-weight: 600;
+      }
+      pre.detail-content .err-section {
+        color: var(--error);
+        font-weight: 600;
+      }
+
+      /* ─────────── Login form ─────────── */
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .login-form label {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .login-form input {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 8px;
+        outline: none;
+        width: 100%;
+      }
+      .login-form input:focus {
+        border-color: var(--primary);
+      }
+      .login-error {
+        color: var(--error);
+        font-size: 12px;
+        min-height: 16px;
+      }
+      .login-hint {
+        color: var(--text-muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .login-hint code {
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      /* ─────────── Toast ─────────── */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        box-shadow: var(--shadow);
+        z-index: 100;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.2s, transform 0.2s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.error {
+        border-color: rgba(239, 68, 68, 0.5);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="header">
+      <h1>🛰️ CLIProxyAPI · Request Logs</h1>
+      <span class="subtitle" id="subtitle"></span>
+      <span class="spacer"></span>
+      <span class="pill" id="dirPill" hidden></span>
+      <span class="pill warn" id="disabledPill" hidden
+        >request-log OFF · only errors saved</span
+      >
+      <a class="btn ghost" href="/management.html">← back to CPAMC</a>
+      <button class="btn ghost" id="logoutBtn">Logout</button>
+    </header>
+
+    <div class="toolbar">
+      <input
+        type="search"
+        id="searchInput"
+        placeholder="Search by model · provider · effort · id…"
+        autocomplete="off"
+      />
+      <label class="checkbox">
+        <input type="checkbox" id="errorsOnly" />
+        Errors only
+      </label>
+      <button class="btn primary" id="refreshBtn">↻ Refresh</button>
+      <span class="stats" id="stats"></span>
+    </div>
+
+    <main class="main">
+      <div class="table-wrap" id="tableWrap">
+        <table class="requests">
+          <thead>
+            <tr>
+              <th style="width: 100px">Time</th>
+              <th style="width: 70px">Method</th>
+              <th style="width: 90px">Provider</th>
+              <th>Model</th>
+              <th style="width: 100px">Effort</th>
+              <th style="width: 80px">Status</th>
+              <th style="width: 80px">Size</th>
+              <th style="width: 220px">Request ID</th>
+            </tr>
+          </thead>
+          <tbody id="rowsBody"></tbody>
+        </table>
+        <div class="empty" id="emptyState" hidden>
+          <div class="icon">📭</div>
+          <h3 id="emptyTitle">No request logs yet</h3>
+          <div class="hint" id="emptyHint">
+            Enable <code>request-log: true</code> in
+            <code>config.yaml</code> and make a request through the proxy.
+            Failed requests are always captured as <code>error-*.log</code>.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Login modal -->
+    <div class="modal-backdrop" id="loginBackdrop">
+      <div class="modal small">
+        <div class="modal-header">
+          <h2>🔐 Connect to management API</h2>
+        </div>
+        <div class="modal-body">
+          <form class="login-form" id="loginForm">
+            <label for="loginPassword">Management password</label>
+            <input
+              type="password"
+              id="loginPassword"
+              autocomplete="current-password"
+              placeholder="MANAGEMENT_PASSWORD or local password"
+              required
+            />
+            <div class="login-error" id="loginError"></div>
+            <div class="login-hint">
+              Use the same value you set in <code>MANAGEMENT_PASSWORD</code>
+              (env var) or as <code>remote-management.secret-key</code> in
+              <code>config.yaml</code>. The token is stored in your browser
+              <code>localStorage</code> only.
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn primary" id="loginSubmit">Connect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail modal -->
+    <div class="modal-backdrop hidden" id="detailBackdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="detailTitle">Request log</h2>
+          <button class="close" id="detailClose" title="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-summary" id="detailSummary"></div>
+          <pre class="detail-content" id="detailContent"></pre>
+        </div>
+        <div class="modal-footer">
+          <button class="btn ghost" id="detailCopy">Copy log</button>
+          <button class="btn ghost" id="detailDownload">Download</button>
+          <button class="btn primary" id="detailReload">↻ Reload</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      "use strict";
+
+      const TOKEN_KEY = "cliproxy.requests.token";
+      const POLL_INTERVAL_MS = 0; // set >0 to auto-refresh; 0 disables
+
+      const els = {
+        subtitle: document.getElementById("subtitle"),
+        dirPill: document.getElementById("dirPill"),
+        disabledPill: document.getElementById("disabledPill"),
+        searchInput: document.getElementById("searchInput"),
+        errorsOnly: document.getElementById("errorsOnly"),
+        refreshBtn: document.getElementById("refreshBtn"),
+        logoutBtn: document.getElementById("logoutBtn"),
+        rowsBody: document.getElementById("rowsBody"),
+        emptyState: document.getElementById("emptyState"),
+        emptyTitle: document.getElementById("emptyTitle"),
+        emptyHint: document.getElementById("emptyHint"),
+        stats: document.getElementById("stats"),
+        loginBackdrop: document.getElementById("loginBackdrop"),
+        loginForm: document.getElementById("loginForm"),
+        loginPassword: document.getElementById("loginPassword"),
+        loginError: document.getElementById("loginError"),
+        loginSubmit: document.getElementById("loginSubmit"),
+        detailBackdrop: document.getElementById("detailBackdrop"),
+        detailTitle: document.getElementById("detailTitle"),
+        detailClose: document.getElementById("detailClose"),
+        detailSummary: document.getElementById("detailSummary"),
+        detailContent: document.getElementById("detailContent"),
+        detailCopy: document.getElementById("detailCopy"),
+        detailDownload: document.getElementById("detailDownload"),
+        detailReload: document.getElementById("detailReload"),
+        toast: document.getElementById("toast"),
+      };
+
+      const state = {
+        token: localStorage.getItem(TOKEN_KEY) || "",
+        entries: [],
+        filtered: [],
+        selected: null,
+        currentDetail: null, // { id, content }
+        loading: false,
+        requestLogEnabled: false,
+        logDir: "",
+        searchTerm: "",
+        errorsOnly: false,
+      };
+
+      // ─────────── auth + api ───────────
+
+      async function api(path, opts = {}) {
+        const url = path.startsWith("/") ? path : "/" + path;
+        const headers = Object.assign(
+          {
+            Authorization: state.token ? "Bearer " + state.token : "",
+          },
+          opts.headers || {}
+        );
+        const resp = await fetch(url, { ...opts, headers });
+        if (resp.status === 401 || resp.status === 403) {
+          state.token = "";
+          localStorage.removeItem(TOKEN_KEY);
+          showLogin("Authentication failed. Re-enter the password.");
+          throw new Error("auth_required");
+        }
+        return resp;
+      }
+
+      async function apiJSON(path, opts = {}) {
+        const resp = await api(path, opts);
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${text || resp.statusText}`);
+        }
+        return resp.json();
+      }
+
+      async function apiText(path, opts = {}) {
+        const resp = await api(path, opts);
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${text || resp.statusText}`);
+        }
+        return resp.text();
+      }
+
+      // ─────────── login ───────────
+
+      function showLogin(errMsg) {
+        els.loginError.textContent = errMsg || "";
+        els.loginBackdrop.classList.remove("hidden");
+        setTimeout(() => els.loginPassword.focus(), 50);
+      }
+
+      function hideLogin() {
+        els.loginBackdrop.classList.add("hidden");
+        els.loginPassword.value = "";
+        els.loginError.textContent = "";
+      }
+
+      async function tryLogin(password) {
+        state.token = password;
+        // Validate by hitting a cheap GET endpoint.
+        const resp = await fetch("/v0/management/config", {
+          headers: { Authorization: "Bearer " + password },
+        });
+        if (!resp.ok) {
+          state.token = "";
+          throw new Error(
+            resp.status === 401 || resp.status === 403
+              ? "Invalid password"
+              : `HTTP ${resp.status}`
+          );
+        }
+        localStorage.setItem(TOKEN_KEY, password);
+      }
+
+      els.loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const pwd = els.loginPassword.value.trim();
+        if (!pwd) {
+          els.loginError.textContent = "Password is required";
+          return;
+        }
+        els.loginSubmit.disabled = true;
+        els.loginError.textContent = "";
+        try {
+          await tryLogin(pwd);
+          hideLogin();
+          await refreshList();
+        } catch (err) {
+          els.loginError.textContent = err.message || String(err);
+        } finally {
+          els.loginSubmit.disabled = false;
+        }
+      });
+
+      els.logoutBtn.addEventListener("click", () => {
+        state.token = "";
+        localStorage.removeItem(TOKEN_KEY);
+        state.entries = [];
+        state.filtered = [];
+        renderTable();
+        showLogin();
+      });
+
+      // ─────────── list rendering ───────────
+
+      function fmtTime(unix) {
+        if (!unix) return "—";
+        const d = new Date(unix * 1000);
+        const today = new Date();
+        const sameDay =
+          d.getFullYear() === today.getFullYear() &&
+          d.getMonth() === today.getMonth() &&
+          d.getDate() === today.getDate();
+        if (sameDay) {
+          return d.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        }
+        return d.toLocaleDateString() + " " +
+          d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function fmtBytes(n) {
+        if (!n || n <= 0) return "0";
+        if (n < 1024) return n + "B";
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + "K";
+        if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + "M";
+        return (n / (1024 * 1024 * 1024)).toFixed(1) + "G";
+      }
+
+      function effortBadge(effort) {
+        if (!effort) return '<span class="badge muted">—</span>';
+        const e = String(effort).toLowerCase();
+        const known = ["none", "low", "medium", "high", "xhigh", "minimal"];
+        const cls = known.includes(e) ? e : "muted";
+        return `<span class="badge ${cls}">${escapeHTML(effort)}</span>`;
+      }
+
+      function statusBadge(status) {
+        if (!status) return '<span class="badge muted">—</span>';
+        const cls = "status-" + Math.floor(status / 100);
+        return `<span class="badge ${cls}">${status}</span>`;
+      }
+
+      function methodBadge(method) {
+        if (!method) return '<span class="badge muted">—</span>';
+        return `<span class="badge method-${method}">${escapeHTML(
+          method
+        )}</span>`;
+      }
+
+      function escapeHTML(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function applyFilters() {
+        const term = state.searchTerm.toLowerCase().trim();
+        state.filtered = state.entries.filter((entry) => {
+          if (state.errorsOnly && !entry.is_error) return false;
+          if (!term) return true;
+          const haystack = [
+            entry.name,
+            entry.id,
+            entry.model,
+            entry.provider,
+            entry.effort,
+            entry.method,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(term);
+        });
+      }
+
+      function renderTable() {
+        applyFilters();
+        const rows = state.filtered;
+        if (rows.length === 0) {
+          els.rowsBody.innerHTML = "";
+          els.emptyState.hidden = false;
+          if (state.entries.length === 0) {
+            els.emptyTitle.textContent = state.requestLogEnabled
+              ? "No request logs yet"
+              : "request-log is OFF";
+            els.emptyHint.innerHTML = state.requestLogEnabled
+              ? "Make a request through the proxy and refresh."
+              : 'Enable <code>request-log: true</code> in <code>config.yaml</code> and make a request. Failed requests are always captured as <code>error-*.log</code>.';
+          } else {
+            els.emptyTitle.textContent = "No matches";
+            els.emptyHint.textContent =
+              "Try clearing the search or the errors-only filter.";
+          }
+        } else {
+          els.emptyState.hidden = true;
+          const html = rows
+            .map((entry) => {
+              const cls =
+                "row " +
+                (entry.is_error ? "is-error " : "") +
+                (state.selected === entry.id ? "selected" : "");
+              return `<tr class="${cls}" data-id="${escapeHTML(entry.id)}">
+                <td class="col-time">${fmtTime(entry.modified)}</td>
+                <td class="col-method">${methodBadge(entry.method || "")}</td>
+                <td>${escapeHTML(entry.provider || "—")}</td>
+                <td class="col-model">${escapeHTML(entry.model || "—")}</td>
+                <td class="col-effort">${effortBadge(entry.effort)}</td>
+                <td class="col-status">${statusBadge(entry.status)}</td>
+                <td>${fmtBytes(entry.size)}</td>
+                <td class="col-id">${escapeHTML(entry.id)}</td>
+              </tr>`;
+            })
+            .join("");
+          els.rowsBody.innerHTML = html;
+        }
+        const totalLabel = `${rows.length} of ${state.entries.length} entries`;
+        els.stats.textContent = state.loading ? "Loading…" : totalLabel;
+      }
+
+      els.rowsBody.addEventListener("click", (e) => {
+        const tr = e.target.closest("tr[data-id]");
+        if (!tr) return;
+        const id = tr.dataset.id;
+        const entry = state.entries.find((x) => x.id === id);
+        if (!entry) return;
+        state.selected = id;
+        renderTable();
+        openDetail(entry);
+      });
+
+      // ─────────── refresh ───────────
+
+      async function refreshList() {
+        if (!state.token) {
+          showLogin();
+          return;
+        }
+        state.loading = true;
+        renderTable();
+        try {
+          const data = await apiJSON("/v0/management/request-logs?limit=300");
+          state.entries = Array.isArray(data.files) ? data.files : [];
+          state.requestLogEnabled = !!data.request_log_enabled;
+          state.logDir = data.log_dir || "";
+          els.disabledPill.hidden = state.requestLogEnabled;
+          els.dirPill.hidden = !state.logDir;
+          els.dirPill.textContent = state.logDir
+            ? "logs · " + state.logDir
+            : "";
+          els.subtitle.textContent =
+            "Last refresh: " + new Date().toLocaleTimeString();
+        } catch (err) {
+          if (err && err.message !== "auth_required") {
+            toast(err.message || String(err), true);
+          }
+        } finally {
+          state.loading = false;
+          renderTable();
+        }
+      }
+
+      els.refreshBtn.addEventListener("click", refreshList);
+      els.searchInput.addEventListener("input", (e) => {
+        state.searchTerm = e.target.value;
+        renderTable();
+      });
+      els.errorsOnly.addEventListener("change", (e) => {
+        state.errorsOnly = e.target.checked;
+        renderTable();
+      });
+
+      // ─────────── detail modal ───────────
+
+      async function openDetail(entry) {
+        state.currentDetail = { entry, content: "" };
+        els.detailBackdrop.classList.remove("hidden");
+        els.detailTitle.textContent =
+          (entry.is_error ? "❌ " : "🛰 ") +
+          (entry.model || entry.id) +
+          " · " +
+          fmtTime(entry.modified);
+        renderDetailSummary(entry);
+        els.detailContent.textContent = "Loading…";
+        try {
+          const text = await apiText(
+            "/v0/management/request-log-by-id/" + encodeURIComponent(entry.id)
+          );
+          state.currentDetail.content = text;
+          els.detailContent.innerHTML = highlightLogContent(text);
+        } catch (err) {
+          if (err && err.message !== "auth_required") {
+            els.detailContent.textContent =
+              "⚠ Failed to load: " + (err.message || String(err));
+          }
+        }
+      }
+
+      function renderDetailSummary(entry) {
+        const chips = [];
+        const add = (label, value) => {
+          if (value === undefined || value === null || value === "") return;
+          chips.push(
+            `<span class="chip">${escapeHTML(label)}: <strong>${escapeHTML(
+              value
+            )}</strong></span>`
+          );
+        };
+        add("Time", fmtTime(entry.modified));
+        add("Method", entry.method);
+        add("Provider", entry.provider);
+        add("Model", entry.model);
+        if (entry.effort) {
+          chips.push(
+            `<span class="chip">Effort: ${effortBadge(entry.effort)}</span>`
+          );
+        }
+        if (entry.status) {
+          chips.push(
+            `<span class="chip">Status: ${statusBadge(entry.status)}</span>`
+          );
+        }
+        add("Size", fmtBytes(entry.size));
+        add("ID", entry.id);
+        if (entry.is_error) {
+          chips.push(
+            `<span class="chip" style="color:var(--error)">● error log</span>`
+          );
+        }
+        els.detailSummary.innerHTML = chips.join("");
+      }
+
+      function highlightLogContent(text) {
+        // Cheap per-line highlighting: section headers stand out,
+        // body remains plain text. Fully-escaped output to prevent XSS.
+        const lines = text.split("\n");
+        const out = lines.map((line) => {
+          const escaped = escapeHTML(line);
+          if (/^=== API REQUEST/i.test(line)) {
+            return `<span class="req-section">${escaped}</span>`;
+          }
+          if (/^=== API RESPONSE/i.test(line)) {
+            return `<span class="resp-section">${escaped}</span>`;
+          }
+          if (/^=== ERROR/i.test(line) || /^Status:\s*[45]\d{2}/.test(line)) {
+            return `<span class="err-section">${escaped}</span>`;
+          }
+          return escaped;
+        });
+        return out.join("\n");
+      }
+
+      function closeDetail() {
+        els.detailBackdrop.classList.add("hidden");
+        state.currentDetail = null;
+      }
+      els.detailClose.addEventListener("click", closeDetail);
+      els.detailBackdrop.addEventListener("click", (e) => {
+        if (e.target === els.detailBackdrop) closeDetail();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          if (!els.detailBackdrop.classList.contains("hidden")) closeDetail();
+        }
+      });
+      els.detailReload.addEventListener("click", () => {
+        if (state.currentDetail) openDetail(state.currentDetail.entry);
+      });
+      els.detailCopy.addEventListener("click", async () => {
+        if (!state.currentDetail || !state.currentDetail.content) return;
+        try {
+          await navigator.clipboard.writeText(state.currentDetail.content);
+          toast("Copied to clipboard");
+        } catch {
+          toast("Copy failed", true);
+        }
+      });
+      els.detailDownload.addEventListener("click", () => {
+        if (!state.currentDetail || !state.currentDetail.content) return;
+        const blob = new Blob([state.currentDetail.content], {
+          type: "text/plain",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = state.currentDetail.entry.name || "request.log";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      // ─────────── toast ───────────
+
+      let toastTimer = null;
+      function toast(message, isError) {
+        els.toast.textContent = message;
+        els.toast.classList.toggle("error", !!isError);
+        els.toast.classList.add("show");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          els.toast.classList.remove("show");
+        }, 2400);
+      }
+
+      // ─────────── boot ───────────
+
+      (async function init() {
+        if (!state.token) {
+          showLogin();
+        } else {
+          await refreshList();
+          if (POLL_INTERVAL_MS > 0) {
+            setInterval(refreshList, POLL_INTERVAL_MS);
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
