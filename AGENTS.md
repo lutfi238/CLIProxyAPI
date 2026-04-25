@@ -4,6 +4,7 @@ Go 1.26+ proxy server providing OpenAI/Gemini/Claude/Codex compatible APIs with 
 
 ## Repository
 - GitHub: https://github.com/router-for-me/CLIProxyAPI
+- Go module: `github.com/router-for-me/CLIProxyAPI/v6` (v6 import path; bump major when introducing breaking SDK changes)
 
 ## Commands
 ```bash
@@ -56,3 +57,21 @@ go build -o test-output ./cmd/server && rm test-output # Verify compile (REQUIRE
 - Use logrus structured logging; avoid leaking secrets/tokens in logs
 - Avoid panics in HTTP handlers; prefer logged errors and meaningful HTTP status codes
 - Timeouts are allowed only during credential acquisition; after an upstream connection is established, do not set timeouts for any subsequent network behavior. Intentional exceptions that must remain allowed are the Codex websocket liveness deadlines in `internal/runtime/executor/codex_websockets_executor.go`, the wsrelay session deadlines in `internal/wsrelay/session.go`, the management APICall timeout in `internal/api/handlers/management/api_tools.go`, and the `cmd/fetch_antigravity_models` utility timeouts
+
+## Tests
+- Unit tests are colocated with code (e.g., `internal/config/*_test.go`, `internal/thinking/apply_user_defined_test.go`)
+- Cross-module integration tests live in `test/` (e.g., `test/thinking_conversion_test.go`, `test/amp_management_test.go`)
+- Test fixtures live under `test/testdata/`
+- Translator behavior is tested indirectly via `test/thinking_conversion_test.go` and Claude/Amp sentinels — never weaken these tests
+- JSON in tests is read/written with `gjson`/`sjson` (matches production code style)
+
+## PR Workflow
+- PRs targeting `main` are auto-retargeted to `dev` by `.github/workflows/auto-retarget-main-pr-to-dev.yml`; open feature PRs against `dev`
+- `.github/workflows/agents-md-guard.yml` auto-closes any PR that modifies `AGENTS.md` — do not include `AGENTS.md` in PR diffs (this file is gitignored locally and meant for local agent context)
+- `.github/workflows/pr-path-guard.yml` fails any PR that touches `internal/translator/**`; coordinate translator changes per the rule above
+- `.github/workflows/pr-test-build.yml` runs `go build ./cmd/server` after refreshing `internal/registry/models/models.json` from `router-for-me/models@main` — keep that file consistent with upstream
+
+## Docs (link, don't duplicate)
+- SDK usage: `docs/sdk-usage.md` · advanced: `docs/sdk-advanced.md` · access: `docs/sdk-access.md` · watcher: `docs/sdk-watcher.md`
+- Config template: `config.example.yaml` · env template: `.env.example`
+- Examples: `examples/custom-provider`, `examples/http-request`, `examples/translator`
